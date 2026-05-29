@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>German Verb Trainer</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="side-panel">
+        <div class="brand-block">
+          <span class="brand-mark">DE</span>
+          <div>
+            <h1>Verb Trainer</h1>
+            <p>Kapitel 1-5</p>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div>
+            <span id="verbCount">19</span>
+            <small>verbs</small>
+          </div>
+          <div>
+            <span id="drillScore">0/6</span>
+            <small>score</small>
+          </div>
+          <div>
+            <span id="drillLeft">6</span>
+            <small>left</small>
+          </div>
+        </div>
+
+        <label class="select-label" for="chapterFilter">Chapter</label>
+        <select id="chapterFilter"></select>
+
+        <label class="select-label" for="verbSearch">Search</label>
+        <input
+          id="verbSearch"
+          type="search"
+          placeholder="verb or meaning…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+
+        <div id="verbList" class="verb-list"></div>
+      </aside>
+
+      <section class="workspace">
+        <nav class="mode-tabs" aria-label="Practice modes">
+          <button class="tab-btn active" data-mode="table" type="button">Reveal</button>
+          <button class="tab-btn" data-mode="type" type="button">Type</button>
+          <button class="tab-btn" data-mode="choice" type="button">Choice</button>
+          <button class="tab-btn" data-mode="fill" type="button">Fill Table</button>
+        </nav>
+
+        <section class="verb-hero" id="verbHero"></section>
+
+        <section class="mode-view active" id="tableMode">
+          <div class="drill-body" id="tableBody">
+            <div class="toolbar">
+              <h2>Reveal Table</h2>
+              <div class="button-row">
+                <button class="ghost-btn" id="hideAllBtn" type="button">Hide All</button>
+                <button class="solid-btn" id="revealAllBtn" type="button">Reveal All</button>
+              </div>
+            </div>
+            <div class="conjugation-table" id="conjugationTable"></div>
+          </div>
+          <div class="summary" id="tableSummary" hidden></div>
+        </section>
+
+        <section class="mode-view" id="typeMode">
+          <div class="drill-body" id="typeBody">
+            <div class="exercise-card">
+              <div class="prompt-meta" id="typeMeta"></div>
+              <div class="prompt-line" id="typePrompt"></div>
+              <form class="answer-form" id="typeForm">
+                <div class="field-wrap" id="typeWrap">
+                  <input id="typeInput" autocomplete="off" spellcheck="false" />
+                  <span class="check-badge">✓</span>
+                </div>
+                <button class="solid-btn" type="submit">Check</button>
+              </form>
+              <div class="feedback" id="typeFeedback"></div>
+              <div class="button-row">
+                <button class="ghost-btn" id="typeRevealBtn" type="button">Show Answer</button>
+                <button class="ghost-btn" id="typeNextBtn" type="button">Skip</button>
+              </div>
+            </div>
+          </div>
+          <div class="summary" id="typeSummary" hidden></div>
+        </section>
+
+        <section class="mode-view" id="choiceMode">
+          <div class="drill-body" id="choiceBody">
+            <div class="exercise-card">
+              <div class="prompt-meta" id="choiceMeta"></div>
+              <div class="prompt-line" id="choicePrompt"></div>
+              <div class="choice-grid" id="choiceGrid"></div>
+              <div class="feedback" id="choiceFeedback"></div>
+              <div class="button-row">
+                <button class="ghost-btn" id="choiceNextBtn" type="button">Skip</button>
+              </div>
+            </div>
+          </div>
+          <div class="summary" id="choiceSummary" hidden></div>
+        </section>
+
+        <section class="mode-view" id="fillMode">
+          <div class="drill-body" id="fillBody">
+            <div class="toolbar">
+              <h2>Fill Table</h2>
+              <div class="button-row">
+                <button class="ghost-btn" id="fillResetBtn" type="button">Restart</button>
+                <button class="solid-btn" id="fillCheckBtn" type="button">Check Table</button>
+              </div>
+            </div>
+            <div class="fill-table" id="fillTable"></div>
+            <div class="feedback" id="fillFeedback"></div>
+          </div>
+          <div class="summary" id="fillSummary" hidden></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
