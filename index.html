@@ -3,7 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>German Verb Trainer</title>
+    <title>German Verb Drills</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -12,24 +19,28 @@
         <div class="brand-block">
           <span class="brand-mark">DE</span>
           <div>
-            <h1>Verb Trainer</h1>
+            <h1>Verb Drills</h1>
             <p>Kapitel 1-5</p>
           </div>
         </div>
 
         <div class="stats-grid">
           <div>
-            <span id="verbCount">19</span>
-            <small>verbs</small>
-          </div>
-          <div>
             <span id="drillScore">0/6</span>
             <small>score</small>
           </div>
           <div>
-            <span id="drillLeft">6</span>
-            <small>left</small>
+            <span id="verbCount">1</span>
+            <small>selected</small>
           </div>
+        </div>
+
+        <div class="xp-block">
+          <div class="xp-head">
+            <small>progress</small>
+            <b id="drillLeft">6</b>
+          </div>
+          <div class="progress-track" id="progressTrack"></div>
         </div>
 
         <label class="select-label" for="chapterFilter">Chapter</label>
@@ -44,28 +55,69 @@
           spellcheck="false"
         />
 
+        <div class="set-toolbar">
+          <span class="select-label">Test set</span>
+          <div class="set-actions">
+            <button class="mini-btn" id="selectAllBtn" type="button">All</button>
+            <button class="mini-btn" id="clearSelBtn" type="button">Clear</button>
+          </div>
+        </div>
         <div id="verbList" class="verb-list"></div>
       </aside>
 
       <section class="workspace">
         <nav class="mode-tabs" aria-label="Practice modes">
-          <button class="tab-btn active" data-mode="table" type="button">Reveal</button>
+          <button class="tab-btn active" data-mode="table" type="button">
+            Match
+          </button>
           <button class="tab-btn" data-mode="type" type="button">Type</button>
-          <button class="tab-btn" data-mode="choice" type="button">Choice</button>
-          <button class="tab-btn" data-mode="fill" type="button">Fill Table</button>
+          <button class="tab-btn" data-mode="choice" type="button">
+            Choice
+          </button>
+          <button class="tab-btn" data-mode="fill" type="button">
+            Fill Table
+          </button>
         </nav>
 
         <section class="verb-hero" id="verbHero"></section>
 
+        <section class="pace-gate" id="paceGate" hidden>
+          <h2 class="pace-title">Choose your pace</h2>
+          <p class="pace-sub" id="paceSub"></p>
+          <div class="pace-options">
+            <button class="pace-btn" data-pace="normal" type="button">
+              <span class="pace-name">Normal</span>
+              <span class="pace-desc">No timer — practice calmly.</span>
+            </button>
+            <button class="pace-btn speed" data-pace="speed" type="button">
+              <span class="pace-name">⚡ Speed</span>
+              <span class="pace-desc" id="paceSpeedDesc"></span>
+            </button>
+          </div>
+        </section>
+
+        <div class="timer-wrap" id="timerWrap" hidden>
+          <div class="timer-fill" id="timerFill"></div>
+        </div>
+
+        <section class="set-note" id="setNote" hidden>
+          <h2 class="pace-title">Pick your verbs</h2>
+          <p class="pace-sub">
+            Select one or more verbs from the list to build a shuffled test.
+          </p>
+        </section>
+
         <section class="mode-view active" id="tableMode">
           <div class="drill-body" id="tableBody">
             <div class="toolbar">
-              <h2>Reveal Table</h2>
+              <h2>Drag to Match</h2>
               <div class="button-row">
-                <button class="ghost-btn" id="hideAllBtn" type="button">Hide All</button>
-                <button class="solid-btn" id="revealAllBtn" type="button">Reveal All</button>
+                <button class="ghost-btn" id="tableResetBtn" type="button">
+                  Restart
+                </button>
               </div>
             </div>
+            <div class="form-bank" id="formBank"></div>
             <div class="conjugation-table" id="conjugationTable"></div>
           </div>
           <div class="summary" id="tableSummary" hidden></div>
@@ -85,8 +137,12 @@
               </form>
               <div class="feedback" id="typeFeedback"></div>
               <div class="button-row">
-                <button class="ghost-btn" id="typeRevealBtn" type="button">Show Answer</button>
-                <button class="ghost-btn" id="typeNextBtn" type="button">Skip</button>
+                <button class="ghost-btn" id="typeRevealBtn" type="button">
+                  Show Answer
+                </button>
+                <button class="ghost-btn" id="typeNextBtn" type="button">
+                  Skip
+                </button>
               </div>
             </div>
           </div>
@@ -101,7 +157,9 @@
               <div class="choice-grid" id="choiceGrid"></div>
               <div class="feedback" id="choiceFeedback"></div>
               <div class="button-row">
-                <button class="ghost-btn" id="choiceNextBtn" type="button">Skip</button>
+                <button class="ghost-btn" id="choiceNextBtn" type="button">
+                  Skip
+                </button>
               </div>
             </div>
           </div>
@@ -113,8 +171,12 @@
             <div class="toolbar">
               <h2>Fill Table</h2>
               <div class="button-row">
-                <button class="ghost-btn" id="fillResetBtn" type="button">Restart</button>
-                <button class="solid-btn" id="fillCheckBtn" type="button">Check Table</button>
+                <button class="ghost-btn" id="fillResetBtn" type="button">
+                  Restart
+                </button>
+                <button class="solid-btn" id="fillCheckBtn" type="button">
+                  Check Table
+                </button>
               </div>
             </div>
             <div class="fill-table" id="fillTable"></div>
