@@ -422,11 +422,67 @@ input:focus {
   overflow: hidden;
 }
 
+/* top-level trainer switch: Verbs / Possessivartikel */
+.trainer-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.trainer-btn {
+  border: 2px solid var(--ink);
+  border-radius: 11px;
+  min-height: 48px;
+  font-weight: 800;
+  font-size: 15px;
+  background: var(--paper);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.trainer-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.trainer-btn.active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
 .mode-tabs {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 16px;
+}
+
+/* Kasus sub-tabs inside the Possessivartikel trainer */
+.kasus-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.kasus-btn {
+  border: 2px solid var(--ink);
+  border-radius: 11px;
+  min-height: 44px;
+  font-weight: 700;
+  font-size: 14px;
+  background: var(--paper);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.kasus-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.kasus-btn.active {
+  background: var(--accent);
+  box-shadow: var(--shadow-sm);
 }
 
 .tab-btn {

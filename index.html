@@ -66,6 +66,16 @@
       </aside>
 
       <section class="workspace">
+        <nav class="trainer-switch" id="trainerSwitch" aria-label="Trainer">
+          <button class="trainer-btn active" data-trainer="verbs" type="button">
+            Verbs
+          </button>
+          <button class="trainer-btn" data-trainer="possessiv" type="button">
+            Possessivartikel
+          </button>
+        </nav>
+
+        <div id="verbsPanel">
         <nav class="mode-tabs" aria-label="Practice modes">
           <button class="tab-btn active" data-mode="table" type="button">
             Match
@@ -184,6 +194,45 @@
           </div>
           <div class="summary" id="fillSummary" hidden></div>
         </section>
+        </div>
+
+        <div id="possessivPanel" hidden>
+          <nav class="kasus-tabs" id="kasusTabs" aria-label="Kasus">
+            <button class="kasus-btn active" data-kasus="Nominativ" type="button">
+              Nominativ
+            </button>
+            <button class="kasus-btn" data-kasus="Dativ" type="button">
+              Dativ
+            </button>
+            <button class="kasus-btn" data-kasus="Akkusativ" type="button">
+              Akkusativ
+            </button>
+          </nav>
+
+          <div class="drill-body" id="possBody">
+            <div class="exercise-card">
+              <div class="prompt-meta" id="possMeta"></div>
+              <div class="prompt-line" id="possPrompt"></div>
+              <form class="answer-form" id="possForm">
+                <div class="field-wrap" id="possWrap">
+                  <input id="possInput" autocomplete="off" spellcheck="false" />
+                  <span class="check-badge">✓</span>
+                </div>
+                <button class="solid-btn" type="submit">Check</button>
+              </form>
+              <div class="feedback" id="possFeedback"></div>
+              <div class="button-row">
+                <button class="ghost-btn" id="possRevealBtn" type="button">
+                  Show Answer
+                </button>
+                <button class="ghost-btn" id="possNextBtn" type="button">
+                  Skip
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="summary" id="possSummary" hidden></div>
+        </div>
       </section>
     </main>
 

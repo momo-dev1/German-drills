@@ -140,12 +140,32 @@ const verbs = [
 const TOTAL = pronouns.length; // forms per verb
 const MODES = ["table", "type", "choice", "fill"];
 
+// ---- Possessivartikel (own tab, own structure) ------------------------------
+// 8 possessors across the columns, Kasus × Genus down the rows (64 cells).
+const possessors = ["ich", "du", "er", "sie (she)", "es", "wir", "ihr", "sie/Sie"];
+const possRows = [
+  { kasus: "Nominativ", genus: "m / n", forms: ["mein", "dein", "sein", "ihr", "sein", "unser", "euer", "ihr"] },
+  { kasus: "Nominativ", genus: "f / pl", forms: ["meine", "deine", "seine", "ihre", "seine", "unsere", "eure", "ihre"] },
+  { kasus: "Dativ", genus: "m / n", forms: ["meinem", "deinem", "seinem", "ihrem", "seinem", "unserem", "eurem", "ihrem"] },
+  { kasus: "Dativ", genus: "f", forms: ["meiner", "deiner", "seiner", "ihrer", "seiner", "unserer", "eurer", "ihrer"] },
+  { kasus: "Dativ", genus: "pl", forms: ["meinen", "deinen", "seinen", "ihren", "seinen", "unseren", "euren", "ihren"] },
+  { kasus: "Akkusativ", genus: "m", forms: ["meinen", "deinen", "seinen", "ihren", "seinen", "unseren", "euren", "ihren"] },
+  { kasus: "Akkusativ", genus: "n", forms: ["mein", "dein", "sein", "ihr", "sein", "unser", "euer", "ihr"] },
+  { kasus: "Akkusativ", genus: "f / pl", forms: ["meine", "deine", "seine", "ihre", "seine", "unsere", "eure", "ihre"] },
+];
+const CASES = ["Nominativ", "Dativ", "Akkusativ"];
+
 const state = {
   selected: new Set([0]), // global verb indices in the test set
   chapter: "All",
   search: "",
   activeMode: "table",
   drills: { table: null, type: null, choice: null, fill: null },
+  trainer: "verbs", // "verbs" | "possessiv"
+  poss: {
+    case: "Nominativ",
+    drills: { Nominativ: null, Dativ: null, Akkusativ: null },
+  },
 };
 
 const el = (id) => document.getElementById(id);
@@ -367,6 +387,14 @@ function renderProgress(cleared, total) {
 
 function updateSidebar() {
   el("verbCount").textContent = state.selected.size;
+  if (state.trainer === "possessiv") {
+    const drill = activePossDrill();
+    const total = drill.cells.length;
+    el("drillScore").textContent = `${drill.firstTry.size}/${total}`;
+    el("drillLeft").textContent = `${drill.cleared.size}/${total}`;
+    renderProgress(drill.cleared.size, total);
+    return;
+  }
   const drill = state.drills[state.activeMode];
   if (!drill) {
     el("drillScore").textContent = "0/0";
@@ -738,6 +766,185 @@ function fillTimeout() {
   renderSummary("fill");
 }
 
+// ---- Possessivartikel (type one cell at a time, split by Kasus) -------------
+
+// One cell per (row, owner) within a single Kasus.
+function buildPossCells(kasus) {
+  const cells = [];
+  possRows
+    .filter((row) => row.kasus === kasus)
+    .forEach((row) => {
+      possessors.forEach((owner, c) => {
+        cells.push({ kasus, genus: row.genus, owner, answer: row.forms[c] });
+      });
+    });
+  return cells;
+}
+
+function newPossDrill(kasus) {
+  const cells = buildPossCells(kasus);
+  return {
+    cells,
+    queue: shuffle([...cells.keys()]),
+    current: null,
+    firstTry: new Set(),
+    failed: new Set(),
+    cleared: new Set(),
+    done: false,
+  };
+}
+
+function startPossDrill(kasus) {
+  state.poss.drills[kasus] = newPossDrill(kasus);
+}
+
+function activePossDrill() {
+  const kasus = state.poss.case;
+  if (!state.poss.drills[kasus]) startPossDrill(kasus);
+  return state.poss.drills[kasus];
+}
+
+function renderPossCard() {
+  const drill = activePossDrill();
+  if (!drill.queue.length) {
+    drill.done = true;
+    renderPossSummary();
+    return;
+  }
+  el("possSummary").hidden = true;
+  el("possBody").hidden = false;
+  const ci = drill.queue[0];
+  drill.current = ci;
+  const cell = drill.cells[ci];
+  const total = drill.cells.length;
+  el("possMeta").textContent = `${cell.kasus} · ${cell.genus} · ${drill.cleared.size}/${total}`;
+  el("possPrompt").textContent = `${cell.owner} ${dots}`;
+  el("possInput").value = "";
+  el("possInput").disabled = false;
+  el("possWrap").className = "field-wrap";
+  el("possFeedback").textContent = "";
+  el("possFeedback").className = "feedback";
+  el("possInput").focus();
+  updateSidebar();
+}
+
+function renderPossSummary() {
+  const drill = activePossDrill();
+  const total = drill.cells.length;
+  const score = drill.firstTry.size;
+  const mistakes = drill.failed.size;
+  const perfect = score === total && mistakes === 0;
+
+  const missed = [...drill.failed].sort((a, b) => a - b);
+  const missedBlock = missed.length
+    ? `
+      <div class="missed-list">
+        <div class="missed-head">What you missed</div>
+        <ul>
+          ${missed
+            .map((ci) => {
+              const cell = drill.cells[ci];
+              return `<li><span class="missed-pronoun">${cell.owner} · ${cell.genus}</span><span class="missed-answer">${cell.answer}</span></li>`;
+            })
+            .join("")}
+        </ul>
+      </div>`
+    : "";
+
+  el("possBody").hidden = true;
+  const summaryEl = el("possSummary");
+  summaryEl.hidden = false;
+  summaryEl.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-emoji">${perfect ? "🏆" : "✅"}</div>
+      <h3>${state.poss.case} complete</h3>
+      <div class="summary-score">${score}<span>/${total}</span></div>
+      <p class="summary-sub">${total} forms · right on first try · ${mistakes} ${mistakes === 1 ? "miss" : "misses"}</p>
+      ${missedBlock}
+      <button class="solid-btn restart-poss" type="button">Restart ${state.poss.case}</button>
+    </div>`;
+  if (perfect) fireConfetti(summaryEl.querySelector(".summary-card"));
+  updateSidebar();
+}
+
+function possSubmit() {
+  const drill = activePossDrill();
+  if (drill.done || drill.current === null) return;
+  const ci = drill.current;
+  const answer = drill.cells[ci].answer;
+  const isCorrect = normalize(el("possInput").value) === normalize(answer);
+  el("possInput").disabled = true;
+
+  if (isCorrect) {
+    el("possWrap").className = "field-wrap is-correct";
+    el("possFeedback").textContent = "";
+    el("possFeedback").className = "feedback good";
+    if (!drill.failed.has(ci)) drill.firstTry.add(ci);
+    drill.cleared.add(ci);
+    drill.queue.shift();
+    setTimeout(renderPossCard, 750);
+  } else {
+    el("possWrap").className = "field-wrap is-wrong";
+    el("possFeedback").textContent = `Answer: ${answer}`;
+    el("possFeedback").className = "feedback bad";
+    drill.failed.add(ci);
+    drill.queue.shift();
+    drill.queue.push(ci);
+    setTimeout(renderPossCard, 1400);
+  }
+  updateSidebar();
+}
+
+function possReveal() {
+  const drill = activePossDrill();
+  if (drill.done || drill.current === null) return;
+  const ci = drill.current;
+  const answer = drill.cells[ci].answer;
+  el("possInput").value = answer;
+  el("possInput").disabled = true;
+  el("possFeedback").textContent = `Answer: ${answer}`;
+  el("possFeedback").className = "feedback";
+  drill.failed.add(ci);
+  drill.queue.shift();
+  drill.queue.push(ci);
+  setTimeout(renderPossCard, 1200);
+}
+
+function possSkip() {
+  const drill = activePossDrill();
+  if (drill.done) return;
+  if (drill.current !== null && drill.queue.length > 1) {
+    drill.queue.shift();
+    drill.queue.push(drill.current);
+  }
+  renderPossCard();
+}
+
+function setKasus(kasus) {
+  state.poss.case = kasus;
+  document.querySelectorAll(".kasus-btn").forEach((button) => {
+    button.classList.toggle("active", button.dataset.kasus === kasus);
+  });
+  renderPossCard();
+}
+
+function setTrainer(trainer) {
+  stopTimer();
+  state.trainer = trainer;
+  document.querySelectorAll(".trainer-btn").forEach((button) => {
+    button.classList.toggle("active", button.dataset.trainer === trainer);
+  });
+  const onVerbs = trainer === "verbs";
+  el("verbsPanel").hidden = !onVerbs;
+  el("possessivPanel").hidden = onVerbs;
+  if (onVerbs) {
+    enterMode(state.activeMode);
+  } else {
+    setKasus(state.poss.case);
+  }
+  updateSidebar();
+}
+
 // ---- Mode switching ---------------------------------------------------------
 
 function renderMode(mode) {
@@ -1034,6 +1241,35 @@ el("fillResetBtn").addEventListener("click", () => {
   enterMode("fill");
 });
 
+// Trainer switch (Verbs / Possessivartikel)
+el("trainerSwitch").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-trainer]");
+  if (!button) return;
+  setTrainer(button.dataset.trainer);
+});
+
+// Possessivartikel — Kasus sub-tabs
+el("kasusTabs").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-kasus]");
+  if (!button) return;
+  setKasus(button.dataset.kasus);
+});
+
+// Possessivartikel — type one cell at a time
+el("possForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  possSubmit();
+});
+
+el("possRevealBtn").addEventListener("click", possReveal);
+el("possNextBtn").addEventListener("click", possSkip);
+
+el("possessivPanel").addEventListener("click", (event) => {
+  if (!event.target.closest(".restart-poss")) return;
+  startPossDrill(state.poss.case);
+  renderPossCard();
+});
+
 // ---- Init -------------------------------------------------------------------
 
 function renderAll() {
@@ -1042,6 +1278,7 @@ function renderAll() {
   renderVerbList();
   renderHero();
   setMode("table");
+  setTrainer("verbs");
 }
 
 renderAll();
