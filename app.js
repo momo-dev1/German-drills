@@ -155,16 +155,35 @@ const possRows = [
 ];
 const CASES = ["Nominativ", "Dativ", "Akkusativ"];
 
+// ---- Personalpronomen (own tab) ---------------------------------------------
+// Nominativ is the prompt; the learner declines it into Akkusativ / Dativ.
+const personalPronouns = [
+  { label: "ich", Akkusativ: "mich", Dativ: "mir" },
+  { label: "du", Akkusativ: "dich", Dativ: "dir" },
+  { label: "er", Akkusativ: "ihn", Dativ: "ihm" },
+  { label: "es", Akkusativ: "es", Dativ: "ihm" },
+  { label: "sie (she)", Akkusativ: "sie", Dativ: "ihr" },
+  { label: "wir", Akkusativ: "uns", Dativ: "uns" },
+  { label: "ihr", Akkusativ: "euch", Dativ: "euch" },
+  { label: "sie (they)", Akkusativ: "sie", Dativ: "ihnen" },
+  { label: "Sie (formal)", Akkusativ: "Sie", Dativ: "Ihnen" },
+];
+const PP_CASES = ["Akkusativ", "Dativ"];
+
 const state = {
   selected: new Set([0]), // global verb indices in the test set
   chapter: "All",
   search: "",
   activeMode: "table",
   drills: { table: null, type: null, choice: null, fill: null },
-  trainer: "verbs", // "verbs" | "possessiv"
+  trainer: "verbs", // "verbs" | "possessiv" | "personal"
   poss: {
     case: "Nominativ",
     drills: { Nominativ: null, Dativ: null, Akkusativ: null },
+  },
+  personal: {
+    case: "Akkusativ",
+    drills: { Akkusativ: null, Dativ: null },
   },
 };
 
@@ -387,8 +406,9 @@ function renderProgress(cleared, total) {
 
 function updateSidebar() {
   el("verbCount").textContent = state.selected.size;
-  if (state.trainer === "possessiv") {
-    const drill = activePossDrill();
+  if (state.trainer === "possessiv" || state.trainer === "personal") {
+    const drill =
+      state.trainer === "possessiv" ? activePossDrill() : activePersonalDrill();
     const total = drill.cells.length;
     el("drillScore").textContent = `${drill.firstTry.size}/${total}`;
     el("drillLeft").textContent = `${drill.cleared.size}/${total}`;
@@ -922,7 +942,7 @@ function possSkip() {
 
 function setKasus(kasus) {
   state.poss.case = kasus;
-  document.querySelectorAll(".kasus-btn").forEach((button) => {
+  document.querySelectorAll("#kasusTabs .kasus-btn").forEach((button) => {
     button.classList.toggle("active", button.dataset.kasus === kasus);
   });
   renderPossCard();
@@ -934,15 +954,175 @@ function setTrainer(trainer) {
   document.querySelectorAll(".trainer-btn").forEach((button) => {
     button.classList.toggle("active", button.dataset.trainer === trainer);
   });
-  const onVerbs = trainer === "verbs";
-  el("verbsPanel").hidden = !onVerbs;
-  el("possessivPanel").hidden = onVerbs;
-  if (onVerbs) {
+  el("verbsPanel").hidden = trainer !== "verbs";
+  el("possessivPanel").hidden = trainer !== "possessiv";
+  el("personalPanel").hidden = trainer !== "personal";
+  if (trainer === "verbs") {
     enterMode(state.activeMode);
-  } else {
+  } else if (trainer === "possessiv") {
     setKasus(state.poss.case);
+  } else {
+    setPersonalKasus(state.personal.case);
   }
   updateSidebar();
+}
+
+// ---- Personalpronomen (type one cell at a time, split by Kasus) -------------
+
+// One cell per pronoun within a single Kasus (Nominativ shown as the prompt).
+function buildPersonalCells(kasus) {
+  return personalPronouns.map((pron) => ({
+    kasus,
+    label: pron.label,
+    answer: pron[kasus],
+  }));
+}
+
+function newPersonalDrill(kasus) {
+  const cells = buildPersonalCells(kasus);
+  return {
+    cells,
+    queue: shuffle([...cells.keys()]),
+    current: null,
+    firstTry: new Set(),
+    failed: new Set(),
+    cleared: new Set(),
+    done: false,
+  };
+}
+
+function startPersonalDrill(kasus) {
+  state.personal.drills[kasus] = newPersonalDrill(kasus);
+}
+
+function activePersonalDrill() {
+  const kasus = state.personal.case;
+  if (!state.personal.drills[kasus]) startPersonalDrill(kasus);
+  return state.personal.drills[kasus];
+}
+
+function renderPersonalCard() {
+  const drill = activePersonalDrill();
+  if (!drill.queue.length) {
+    drill.done = true;
+    renderPersonalSummary();
+    return;
+  }
+  el("ppSummary").hidden = true;
+  el("ppBody").hidden = false;
+  const ci = drill.queue[0];
+  drill.current = ci;
+  const cell = drill.cells[ci];
+  const total = drill.cells.length;
+  el("ppMeta").textContent = `Nominativ → ${cell.kasus} · ${drill.cleared.size}/${total}`;
+  el("ppPrompt").textContent = `${cell.label} ${dots}`;
+  el("ppInput").value = "";
+  el("ppInput").disabled = false;
+  el("ppWrap").className = "field-wrap";
+  el("ppFeedback").textContent = "";
+  el("ppFeedback").className = "feedback";
+  el("ppInput").focus();
+  updateSidebar();
+}
+
+function renderPersonalSummary() {
+  const drill = activePersonalDrill();
+  const total = drill.cells.length;
+  const score = drill.firstTry.size;
+  const mistakes = drill.failed.size;
+  const perfect = score === total && mistakes === 0;
+
+  const missed = [...drill.failed].sort((a, b) => a - b);
+  const missedBlock = missed.length
+    ? `
+      <div class="missed-list">
+        <div class="missed-head">What you missed</div>
+        <ul>
+          ${missed
+            .map((ci) => {
+              const cell = drill.cells[ci];
+              return `<li><span class="missed-pronoun">${cell.label} · ${cell.kasus}</span><span class="missed-answer">${cell.answer}</span></li>`;
+            })
+            .join("")}
+        </ul>
+      </div>`
+    : "";
+
+  el("ppBody").hidden = true;
+  const summaryEl = el("ppSummary");
+  summaryEl.hidden = false;
+  summaryEl.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-emoji">${perfect ? "🏆" : "✅"}</div>
+      <h3>${state.personal.case} complete</h3>
+      <div class="summary-score">${score}<span>/${total}</span></div>
+      <p class="summary-sub">${total} forms · right on first try · ${mistakes} ${mistakes === 1 ? "miss" : "misses"}</p>
+      ${missedBlock}
+      <button class="solid-btn restart-personal" type="button">Restart ${state.personal.case}</button>
+    </div>`;
+  if (perfect) fireConfetti(summaryEl.querySelector(".summary-card"));
+  updateSidebar();
+}
+
+function personalSubmit() {
+  const drill = activePersonalDrill();
+  if (drill.done || drill.current === null) return;
+  const ci = drill.current;
+  const answer = drill.cells[ci].answer;
+  const isCorrect = normalize(el("ppInput").value) === normalize(answer);
+  el("ppInput").disabled = true;
+
+  if (isCorrect) {
+    el("ppWrap").className = "field-wrap is-correct";
+    el("ppFeedback").textContent = "";
+    el("ppFeedback").className = "feedback good";
+    if (!drill.failed.has(ci)) drill.firstTry.add(ci);
+    drill.cleared.add(ci);
+    drill.queue.shift();
+    setTimeout(renderPersonalCard, 750);
+  } else {
+    el("ppWrap").className = "field-wrap is-wrong";
+    el("ppFeedback").textContent = `Answer: ${answer}`;
+    el("ppFeedback").className = "feedback bad";
+    drill.failed.add(ci);
+    drill.queue.shift();
+    drill.queue.push(ci);
+    setTimeout(renderPersonalCard, 1400);
+  }
+  updateSidebar();
+}
+
+function personalReveal() {
+  const drill = activePersonalDrill();
+  if (drill.done || drill.current === null) return;
+  const ci = drill.current;
+  const answer = drill.cells[ci].answer;
+  el("ppInput").value = answer;
+  el("ppInput").disabled = true;
+  el("ppFeedback").textContent = `Answer: ${answer}`;
+  el("ppFeedback").className = "feedback";
+  drill.failed.add(ci);
+  drill.queue.shift();
+  drill.queue.push(ci);
+  setTimeout(renderPersonalCard, 1200);
+}
+
+function personalSkip() {
+  const drill = activePersonalDrill();
+  if (drill.done) return;
+  if (drill.current !== null && drill.queue.length > 1) {
+    drill.queue.shift();
+    drill.queue.push(drill.current);
+  }
+  renderPersonalCard();
+}
+
+function setPersonalKasus(kasus) {
+  state.personal.case = kasus;
+  document.querySelectorAll("#ppTabs .kasus-btn").forEach((button) => {
+    button.classList.toggle("active", button.dataset.kasus === kasus);
+  });
+  renderPersonalCard();
 }
 
 // ---- Mode switching ---------------------------------------------------------
@@ -1268,6 +1448,28 @@ el("possessivPanel").addEventListener("click", (event) => {
   if (!event.target.closest(".restart-poss")) return;
   startPossDrill(state.poss.case);
   renderPossCard();
+});
+
+// Personalpronomen — Kasus sub-tabs
+el("ppTabs").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-kasus]");
+  if (!button) return;
+  setPersonalKasus(button.dataset.kasus);
+});
+
+// Personalpronomen — type one cell at a time
+el("ppForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  personalSubmit();
+});
+
+el("ppRevealBtn").addEventListener("click", personalReveal);
+el("ppNextBtn").addEventListener("click", personalSkip);
+
+el("personalPanel").addEventListener("click", (event) => {
+  if (!event.target.closest(".restart-personal")) return;
+  startPersonalDrill(state.personal.case);
+  renderPersonalCard();
 });
 
 // ---- Init -------------------------------------------------------------------

@@ -422,10 +422,10 @@ input:focus {
   overflow: hidden;
 }
 
-/* top-level trainer switch: Verbs / Possessivartikel */
+/* top-level trainer switch: Verbs / Possessivartikel / Personalpronomen */
 .trainer-switch {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 16px;
 }
@@ -434,8 +434,10 @@ input:focus {
   border: 2px solid var(--ink);
   border-radius: 11px;
   min-height: 48px;
+  padding: 6px 8px;
   font-weight: 800;
-  font-size: 15px;
+  font-size: 14px;
+  line-height: 1.1;
   background: var(--paper);
   transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
@@ -463,6 +465,10 @@ input:focus {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 16px;
+}
+
+.kasus-tabs.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .kasus-btn {

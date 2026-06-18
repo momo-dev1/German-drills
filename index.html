@@ -73,6 +73,9 @@
           <button class="trainer-btn" data-trainer="possessiv" type="button">
             Possessivartikel
           </button>
+          <button class="trainer-btn" data-trainer="personal" type="button">
+            Personalpronomen
+          </button>
         </nav>
 
         <div id="verbsPanel">
@@ -232,6 +235,41 @@
             </div>
           </div>
           <div class="summary" id="possSummary" hidden></div>
+        </div>
+
+        <div id="personalPanel" hidden>
+          <nav class="kasus-tabs two" id="ppTabs" aria-label="Kasus">
+            <button class="kasus-btn active" data-kasus="Akkusativ" type="button">
+              Akkusativ
+            </button>
+            <button class="kasus-btn" data-kasus="Dativ" type="button">
+              Dativ
+            </button>
+          </nav>
+
+          <div class="drill-body" id="ppBody">
+            <div class="exercise-card">
+              <div class="prompt-meta" id="ppMeta"></div>
+              <div class="prompt-line" id="ppPrompt"></div>
+              <form class="answer-form" id="ppForm">
+                <div class="field-wrap" id="ppWrap">
+                  <input id="ppInput" autocomplete="off" spellcheck="false" />
+                  <span class="check-badge">✓</span>
+                </div>
+                <button class="solid-btn" type="submit">Check</button>
+              </form>
+              <div class="feedback" id="ppFeedback"></div>
+              <div class="button-row">
+                <button class="ghost-btn" id="ppRevealBtn" type="button">
+                  Show Answer
+                </button>
+                <button class="ghost-btn" id="ppNextBtn" type="button">
+                  Skip
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="summary" id="ppSummary" hidden></div>
         </div>
       </section>
     </main>
