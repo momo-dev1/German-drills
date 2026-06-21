@@ -170,6 +170,27 @@ const personalPronouns = [
 ];
 const PP_CASES = ["Akkusativ", "Dativ"];
 
+// ---- Artikel (own tab) ------------------------------------------------------
+// The definite / indefinite article table, declined by Kasus × Genus.
+// Plural has no indefinite article (—), so those cells are skipped.
+// `base` is the Nominativ definite article — the prompt the learner sees and
+// declines into each Kasus (der / das / die / die Pl.).
+const artikelRows = [
+  { kasus: "Nominativ", genus: "maskulin", base: "der", bestimmt: "der", unbestimmt: "ein" },
+  { kasus: "Nominativ", genus: "neutral", base: "das", bestimmt: "das", unbestimmt: "ein" },
+  { kasus: "Nominativ", genus: "feminin", base: "die", bestimmt: "die", unbestimmt: "eine" },
+  { kasus: "Nominativ", genus: "Plural", base: "die (Pl.)", bestimmt: "die", unbestimmt: null },
+  { kasus: "Akkusativ", genus: "maskulin", base: "der", bestimmt: "den", unbestimmt: "einen" },
+  { kasus: "Akkusativ", genus: "neutral", base: "das", bestimmt: "das", unbestimmt: "ein" },
+  { kasus: "Akkusativ", genus: "feminin", base: "die", bestimmt: "die", unbestimmt: "eine" },
+  { kasus: "Akkusativ", genus: "Plural", base: "die (Pl.)", bestimmt: "die", unbestimmt: null },
+  { kasus: "Dativ", genus: "maskulin", base: "der", bestimmt: "dem", unbestimmt: "einem" },
+  { kasus: "Dativ", genus: "neutral", base: "das", bestimmt: "dem", unbestimmt: "einem" },
+  { kasus: "Dativ", genus: "feminin", base: "die", bestimmt: "der", unbestimmt: "einer" },
+  { kasus: "Dativ", genus: "Plural", base: "die (Pl.)", bestimmt: "den", unbestimmt: null },
+];
+const ART_CASES = ["Nominativ", "Akkusativ", "Dativ"];
+
 const state = {
   selected: new Set([0]), // global verb indices in the test set
   chapter: "All",
@@ -184,6 +205,9 @@ const state = {
   personal: {
     case: "Akkusativ",
     drills: { Akkusativ: null, Dativ: null },
+  },
+  artikel: {
+    drill: null, // one shuffled drill across all cases
   },
 };
 
@@ -406,9 +430,17 @@ function renderProgress(cleared, total) {
 
 function updateSidebar() {
   el("verbCount").textContent = state.selected.size;
-  if (state.trainer === "possessiv" || state.trainer === "personal") {
+  if (
+    state.trainer === "possessiv" ||
+    state.trainer === "personal" ||
+    state.trainer === "artikel"
+  ) {
     const drill =
-      state.trainer === "possessiv" ? activePossDrill() : activePersonalDrill();
+      state.trainer === "possessiv"
+        ? activePossDrill()
+        : state.trainer === "personal"
+          ? activePersonalDrill()
+          : activeArtikelDrill();
     const total = drill.cells.length;
     el("drillScore").textContent = `${drill.firstTry.size}/${total}`;
     el("drillLeft").textContent = `${drill.cleared.size}/${total}`;
@@ -957,12 +989,15 @@ function setTrainer(trainer) {
   el("verbsPanel").hidden = trainer !== "verbs";
   el("possessivPanel").hidden = trainer !== "possessiv";
   el("personalPanel").hidden = trainer !== "personal";
+  el("artikelPanel").hidden = trainer !== "artikel";
   if (trainer === "verbs") {
     enterMode(state.activeMode);
   } else if (trainer === "possessiv") {
     setKasus(state.poss.case);
-  } else {
+  } else if (trainer === "personal") {
     setPersonalKasus(state.personal.case);
+  } else {
+    renderArtikelCard();
   }
   updateSidebar();
 }
@@ -1123,6 +1158,171 @@ function setPersonalKasus(kasus) {
     button.classList.toggle("active", button.dataset.kasus === kasus);
   });
   renderPersonalCard();
+}
+
+// ---- Artikel (type one article at a time, split by Kasus) -------------------
+
+// One cell per (kasus, genus, article type) — every case mixed together.
+// Plural indefinite is skipped — German has no plural "ein".
+function buildArtikelCells() {
+  const cells = [];
+  artikelRows.forEach((row) => {
+    cells.push({
+      kasus: row.kasus,
+      genus: row.genus,
+      base: row.base,
+      type: "bestimmt",
+      answer: row.bestimmt,
+    });
+    if (row.unbestimmt) {
+      cells.push({
+        kasus: row.kasus,
+        genus: row.genus,
+        base: row.base,
+        type: "unbestimmt",
+        answer: row.unbestimmt,
+      });
+    }
+  });
+  return cells;
+}
+
+function newArtikelDrill() {
+  const cells = buildArtikelCells();
+  return {
+    cells,
+    queue: shuffle([...cells.keys()]),
+    current: null,
+    firstTry: new Set(),
+    failed: new Set(),
+    cleared: new Set(),
+    done: false,
+  };
+}
+
+function startArtikelDrill() {
+  state.artikel.drill = newArtikelDrill();
+}
+
+function activeArtikelDrill() {
+  if (!state.artikel.drill) startArtikelDrill();
+  return state.artikel.drill;
+}
+
+function renderArtikelCard() {
+  const drill = activeArtikelDrill();
+  if (!drill.queue.length) {
+    drill.done = true;
+    renderArtikelSummary();
+    return;
+  }
+  el("artSummary").hidden = true;
+  el("artBody").hidden = false;
+  const ci = drill.queue[0];
+  drill.current = ci;
+  const cell = drill.cells[ci];
+  const total = drill.cells.length;
+  el("artMeta").innerHTML = `${cell.kasus} · <span class="art-type ${cell.type}">${cell.type}er Artikel</span> · ${drill.cleared.size}/${total}`;
+  el("artPrompt").textContent = `${cell.base} → ${dots}`;
+  el("artInput").value = "";
+  el("artInput").disabled = false;
+  el("artWrap").className = "field-wrap";
+  el("artFeedback").textContent = "";
+  el("artFeedback").className = "feedback";
+  el("artInput").focus();
+  updateSidebar();
+}
+
+function renderArtikelSummary() {
+  const drill = activeArtikelDrill();
+  const total = drill.cells.length;
+  const score = drill.firstTry.size;
+  const mistakes = drill.failed.size;
+  const perfect = score === total && mistakes === 0;
+
+  const missed = [...drill.failed].sort((a, b) => a - b);
+  const missedBlock = missed.length
+    ? `
+      <div class="missed-list">
+        <div class="missed-head">What you missed</div>
+        <ul>
+          ${missed
+            .map((ci) => {
+              const cell = drill.cells[ci];
+              return `<li><span class="missed-pronoun">${cell.base} · ${cell.type}</span><span class="missed-answer">${cell.answer}</span></li>`;
+            })
+            .join("")}
+        </ul>
+      </div>`
+    : "";
+
+  el("artBody").hidden = true;
+  const summaryEl = el("artSummary");
+  summaryEl.hidden = false;
+  summaryEl.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-emoji">${perfect ? "🏆" : "✅"}</div>
+      <h3>Artikel complete</h3>
+      <div class="summary-score">${score}<span>/${total}</span></div>
+      <p class="summary-sub">${total} forms · right on first try · ${mistakes} ${mistakes === 1 ? "miss" : "misses"}</p>
+      ${missedBlock}
+      <button class="solid-btn restart-artikel" type="button">Restart drill</button>
+    </div>`;
+  if (perfect) fireConfetti(summaryEl.querySelector(".summary-card"));
+  updateSidebar();
+}
+
+function artikelSubmit() {
+  const drill = activeArtikelDrill();
+  if (drill.done || drill.current === null) return;
+  const ci = drill.current;
+  const answer = drill.cells[ci].answer;
+  const isCorrect = normalize(el("artInput").value) === normalize(answer);
+  el("artInput").disabled = true;
+
+  if (isCorrect) {
+    el("artWrap").className = "field-wrap is-correct";
+    el("artFeedback").textContent = "";
+    el("artFeedback").className = "feedback good";
+    if (!drill.failed.has(ci)) drill.firstTry.add(ci);
+    drill.cleared.add(ci);
+    drill.queue.shift();
+    setTimeout(renderArtikelCard, 750);
+  } else {
+    el("artWrap").className = "field-wrap is-wrong";
+    el("artFeedback").textContent = `Answer: ${answer}`;
+    el("artFeedback").className = "feedback bad";
+    drill.failed.add(ci);
+    drill.queue.shift();
+    drill.queue.push(ci);
+    setTimeout(renderArtikelCard, 1400);
+  }
+  updateSidebar();
+}
+
+function artikelReveal() {
+  const drill = activeArtikelDrill();
+  if (drill.done || drill.current === null) return;
+  const ci = drill.current;
+  const answer = drill.cells[ci].answer;
+  el("artInput").value = answer;
+  el("artInput").disabled = true;
+  el("artFeedback").textContent = `Answer: ${answer}`;
+  el("artFeedback").className = "feedback";
+  drill.failed.add(ci);
+  drill.queue.shift();
+  drill.queue.push(ci);
+  setTimeout(renderArtikelCard, 1200);
+}
+
+function artikelSkip() {
+  const drill = activeArtikelDrill();
+  if (drill.done) return;
+  if (drill.current !== null && drill.queue.length > 1) {
+    drill.queue.shift();
+    drill.queue.push(drill.current);
+  }
+  renderArtikelCard();
 }
 
 // ---- Mode switching ---------------------------------------------------------
@@ -1470,6 +1670,21 @@ el("personalPanel").addEventListener("click", (event) => {
   if (!event.target.closest(".restart-personal")) return;
   startPersonalDrill(state.personal.case);
   renderPersonalCard();
+});
+
+// Artikel — type one article at a time
+el("artForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  artikelSubmit();
+});
+
+el("artRevealBtn").addEventListener("click", artikelReveal);
+el("artNextBtn").addEventListener("click", artikelSkip);
+
+el("artikelPanel").addEventListener("click", (event) => {
+  if (!event.target.closest(".restart-artikel")) return;
+  startArtikelDrill();
+  renderArtikelCard();
 });
 
 // ---- Init -------------------------------------------------------------------

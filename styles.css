@@ -249,6 +249,22 @@ h1 {
   letter-spacing: 0.01em;
 }
 
+.art-type {
+  padding: 1px 8px;
+  border-radius: 7px;
+  font-weight: 800;
+}
+
+.art-type.bestimmt {
+  color: var(--paper);
+  background: var(--accent);
+}
+
+.art-type.unbestimmt {
+  color: var(--paper);
+  background: var(--bad);
+}
+
 /* ----------------------------------------------------- XP / progress */
 
 .xp-block {
@@ -425,7 +441,7 @@ input:focus {
 /* top-level trainer switch: Verbs / Possessivartikel / Personalpronomen */
 .trainer-switch {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 16px;
 }
